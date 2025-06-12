@@ -1,99 +1,148 @@
 #!/usr/bin/env python3
-# dharma.py — Red Team Orchestrator with Safe Handoffs
-# Author: Braxton Bailey (@Jimi421)
-
+"""
+Dharma-Tools Central CLI
+Full-featured, colorized, logging-enabled command center for recon → NSE → exploit
+"""
 import argparse
+import logging
 import subprocess
-import os
 import sys
-import json
+import os
+from colorama import init as colorama_init, Fore, Style
 
-ROOT = os.path.dirname(os.path.abspath(__file__))
-RECON       = os.path.join(ROOT, "utils", "recon", "http_recon.py")
-BRUTE       = os.path.join(ROOT, "utils", "bruteforce", "http_brute.py")
-AUTO_NSE    = os.path.join(ROOT, "utils", "auto-nse.py")
-AUTO_EXP    = os.path.join(ROOT, "utils", "auto-exploit.py")
-LOOT_DIR    = os.path.join(ROOT, "loot")
+__version__ = "0.1.0"
 
-def run(cmd):
-    print(f"\n[+] Running: {cmd}")
-    subprocess.call(cmd, shell=True)
+# Initialize colorama
+colorama_init(autoreset=True)
 
-def confirm(prompt):
-    return input(f"\n[?] {prompt} [y/N]: ").strip().lower() == "y"
+# Default directories (can be overridden)
+DEFAULT_LOOT_DIR = os.path.join(os.getcwd(), "loot")
+DEFAULT_PAYLOAD_DIR = os.path.join(os.getcwd(), "payloads")
 
-def run_recon(target):
-    cmd = f"python3 {RECON} --target {target}"
-    run(cmd)
+# Configure logging
+logger = logging.getLogger("dharma")
 
-def list_loot():
-    files = sorted(f for f in os.listdir(LOOT_DIR) if f.startswith("http-"))
-    if not files:
-        print("[!] No loot files found.")
-        return None
-    print("\n[+] Available loot files:")
-    for i, f in enumerate(files):
-        print(f"  [{i}] {f}")
-    idx = input("Select a file number to continue: ")
+
+def setup_logging(verbose: bool):
+    level = logging.DEBUG if verbose else logging.INFO
+    logging.basicConfig(
+        level=level,
+        format=f"%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
+
+def run_command(cmd_list):
+    logger.debug(f"Running command: {' '.join(cmd_list)}")
     try:
-        return os.path.join(LOOT_DIR, files[int(idx)])
-    except:
-        print("[!] Invalid selection.")
-        return None
-
-def load_loot(path):
-    with open(path) as f:
-        return json.load(f)
-
-def prompt_brute(loot):
-    for login in loot.get("logins", []):
-        print(f"\n[+] Login page found: {login['url']}")
-        method = login.get("method", "form")
-        if method == "form":
-            print(f"    Fields: {login['username_field']} / {login['password_field']}")
-        if confirm("→ Launch brute-force attack with level=fast?"):
-            path = login["url"].split(".com")[-1]
-            cmd = f"python3 {BRUTE} --target {loot['target']}{path} --level fast"
-            run(cmd)
-
-def prompt_nse(loot):
-    if confirm("→ Launch auto-nse scan based on loot?"):
-        cmd = f"python3 {AUTO_NSE} --target {loot['target']}"
-        run(cmd)
-
-def prompt_exploit():
-    if confirm("→ Launch auto-exploit?"):
-        run(f"python3 {AUTO_EXP}")
-
-def main():
-    parser = argparse.ArgumentParser(description="🔱 Dharma Red Team Orchestrator")
-    parser.add_argument("--target", help="Target host (e.g. http://10.10.10.42)")
-    args = parser.parse_args()
-
-    if not args.target:
-        print("[!] Please specify --target")
+        subprocess.run(cmd_list, check=True)
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Command failed: {e}")
         sys.exit(1)
 
-    print(f"\n🔱 Dharma Starting on Target: {args.target}")
-    print("─────────────────────────────────────────────")
 
-    # Phase 1: Recon
-    if confirm("→ Begin recon phase?"):
-        run_recon(args.target)
+# Subcommand implementations
 
-    # Phase 2: Loot Review + Brute
-    if confirm("→ Review recon loot for bruteforce targets?"):
-        loot_path = list_loot()
-        if loot_path:
-            loot = load_loot(loot_path)
-            prompt_brute(loot)
-            prompt_nse(loot)
+def cmd_recon(args):
+    targets = args.target.split(',')
+    services = args.services.split(',')
+    print(Fore.CYAN + "[+] Starting recon..." + Style.RESET_ALL)
+    for target in targets:
+        logger.info(f"Recon on {target} for: {services}")
+        for svc in services:
+            script = f"recon/{svc}_recon.py"
+            if not os.path.isfile(script):
+                logger.warning(f"No recon script for service: {svc}")
+                continue
+            run_command(["python3", script, "--target", target])
+    print(Fore.GREEN + "[+] Recon completed." + Style.RESET_ALL)
 
-    # Phase 3: Exploit
-    prompt_exploit()
 
-    print("\n[✓] Dharma complete. Review your loot folder.")
-    print("🔚─────────────────────────────────────────────")
+def cmd_auto_nse(args):
+    print(Fore.CYAN + "[+] Running NSE modules..." + Style.RESET_ALL)
+    run_command(["python3", "auto-nse.py", "--target", args.target])
+    print(Fore.GREEN + "[+] NSE automation completed." + Style.RESET_ALL)
+
+
+def cmd_auto_exploit(args):
+    print(Fore.CYAN + "[+] Launching automated exploits..." + Style.RESET_ALL)
+    run_command(["python3", "auto-exploit.py", "--target", args.target])
+    print(Fore.GREEN + "[+] Exploitation completed." + Style.RESET_ALL)
+
+
+def cmd_loot_list(args):
+    print(Fore.CYAN + "[+] Available loot files:" + Style.RESET_ALL)
+    loot_dir = args.loot_dir or DEFAULT_LOOT_DIR
+    if not os.path.isdir(loot_dir):
+        logger.error(f"Loot directory not found: {loot_dir}")
+        sys.exit(1)
+    for fname in sorted(os.listdir(loot_dir)):
+        print(f" - {fname}")
+
+
+def cmd_payload_list(args):
+    print(Fore.CYAN + "[+] Available payloads:" + Style.RESET_ALL)
+    pdir = args.payload_dir or DEFAULT_PAYLOAD_DIR
+    if not os.path.isdir(pdir):
+        logger.error(f"Payload directory not found: {pdir}")
+        sys.exit(1)
+    for fname in sorted(os.listdir(pdir)):
+        print(f" - {fname}")
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        prog="dharma",
+        description="Dharma-Tools Unified CLI",
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    # Recon
+    p_recon = subparsers.add_parser(
+        "recon", help="Run service-specific recon scripts"
+    )
+    p_recon.add_argument("--target", required=True, help="Target IP or FQDN (comma-separated)")
+    p_recon.add_argument(
+        "--services",
+        default="ftp,http,smb",
+        help="Comma-separated list: ftp,http,smb (default: ftp,http,smb)",
+    )
+    p_recon.set_defaults(func=cmd_recon)
+
+    # Auto NSE
+    p_nse = subparsers.add_parser(
+        "auto-nse", help="Automatically run matching NSE scripts"
+    )
+    p_nse.add_argument("--target", required=True, help="Target IP or FQDN")
+    p_nse.set_defaults(func=cmd_auto_nse)
+
+    # Auto Exploit
+    p_exploit = subparsers.add_parser(
+        "auto-exploit", help="Automatically launch payloads based on recon loot"
+    )
+    p_exploit.add_argument("--target", required=True, help="Target IP or FQDN")
+    p_exploit.set_defaults(func=cmd_auto_exploit)
+
+    # Loot List
+    p_loot = subparsers.add_parser("loot", help="List loot files")
+    p_loot.add_argument("--loot-dir", help="Custom loot directory")
+    p_loot.set_defaults(func=cmd_loot_list)
+
+    # Payload List
+    p_payload = subparsers.add_parser("payload", help="List available payloads")
+    p_payload.add_argument("--payload-dir", help="Custom payload directory")
+    p_payload.set_defaults(func=cmd_payload_list)
+
+    # Parse & run
+    args = parser.parse_args()
+    setup_logging(args.verbose)
+    try:
+        args.func(args)
+    except AttributeError:
+        parser.error("No command specified. Use --help for available commands.")
 
 if __name__ == "__main__":
     main()
