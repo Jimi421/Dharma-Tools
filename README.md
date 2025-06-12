@@ -12,6 +12,7 @@
 - 📦 Payloads for Linux and Windows
 - 🧠 Safe-handoff orchestration via `dharma.py`
 - 📂 Organized loot collection with JSON output
+- 💻 Interactive CLI with subcommands for recon, NSE, exploit, loot, and payloads
 - 🧰 Designed for extensibility and ethical automation
 
 ---
@@ -44,14 +45,12 @@ dharma-tools/
 
 ## 🔱 Orchestration: `dharma.py`
 
-The `dharma.py` orchestrator guides you through each phase:
+The `dharma.py` orchestrator provides an interactive CLI.
 
-python3 dharma.py --target http://10.10.10.42
-
-yaml
-Copy
-Edit
-
+```bash
+python3 dharma.py recon --target <IP>
+```
+Other subcommands include `auto-nse`, `auto-exploit`, `loot`, and `payloads`. The flags `--quiet`, `--verbose`, `--loot-dir`, and `--payload-dir` control verbosity and directories.
 You will be prompted to:
 
 1. 🔍 Run recon (e.g. find login forms)
@@ -133,6 +132,7 @@ Use with:
 
 ```bash
 nmap -p 21 --script ./nse/ftp-user-enum.nse --script-args userdb=wordlists/ftp-users.txt
+```
 📌 Status
 Module	Status
 http_recon.py	✅ Stable
