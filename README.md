@@ -1,122 +1,159 @@
 # 🔱 Dharma-Tools
 
-**Dharma-Tools** is a curated red team and offensive security toolkit authored by **Braxton Bailey ([@Jimi421](https://github.com/Jimi421))**, designed to:
-
-- 🚀 Automate enumeration, brute force, and post-exploitation tasks
-- 🧪 Provide a clean lab testbed for safe tool validation
-- 🎯 Focus on operator usability and modular scripts
-- 🧠 Enhance Nmap with red team–oriented NSE scripts
-
-This project is ideal for:
-
-- Ethical hackers
-- CTF players
-- Adversary simulation teams
-- Developers learning secure design through breakage
+**Dharma** is a modular, safe-handoff red team toolkit designed for controlled enumeration, bruteforcing, exploitation, and shell delivery. Built for offensive security professionals who need surgical control and audit-friendly workflows.
 
 ---
 
-## 🧰 Toolkit Overview
+## ✨ Features
 
-| Directory        | Purpose                                      |
-|------------------|----------------------------------------------|
-| `nse/`           | Custom NSE scripts for Nmap (brute, enum)    |
-| `payloads/`      | Web shells, reverse shells, post-ex tools    |
-| `utils/`         | Uploaders, brute wrappers, wordlists         |
-| `test-targets/`  | Local vulnerable services (Docker)           |
-| `docs/`          | Script documentation & module notes          |
-
----
-
-## 🔍 Featured NSE Scripts
-
-| Script                  | Description                                          |
-|-------------------------|------------------------------------------------------|
-| `http-json-brute.nse`   | JSON-based login brute forcing for APIs             |
-| `ftp-user-enum.nse`     | Detect valid FTP usernames using response codes     |
-| `smb-anon-hunter.nse`   | Recursive SMB loot file discovery via guest access  |
-
-See [`nse/README.md`](nse/README.md) for full argument breakdown and examples.
+- 🔍 Passive and active recon modules
+- 🔐 HTTP brute-forcing with layered wordlist support
+- 🧪 Curated and custom NSE scripts (SMB, HTTP, FTP)
+- 📦 Payloads for Linux and Windows
+- 🧠 Safe-handoff orchestration via `dharma.py`
+- 📂 Organized loot collection with JSON output
+- 🧰 Designed for extensibility and ethical automation
 
 ---
 
-## 🧪 Local Lab: `test-targets/`
+## 📁 Directory Structure
 
-Test and validate your scripts using safe, Dockerized services:
+dharma-tools/
+├── dharma.py # 🔱 Orchestrator script
+├── utils/
+│ ├── recon/ # Passive recon tools (e.g. http_recon.py)
+│ ├── bruteforce/ # Brute-force engines (e.g. http_brute.py)
+│ ├── auto-nse.py # NSE launcher with script routing
+│ └── auto-exploit.py # Exploit script launcher (safe handoff)
+├── nse/ # Custom NSE scripts
+├── wordlists/ # Usernames, passwords, combo lists
+├── payloads/ # Shells, droppers, reverse connect scripts
+├── test-targets/ # Local Docker targets for testing
+├── loot/ # JSON output, saved loot, credentials
+├── LICENSE
+└── README.md
 
-| Folder       | Service        | Port | Description                             |
-|--------------|----------------|------|-----------------------------------------|
-| `flask-api/` | Flask API      | 5000 | API login testing for `http-json-brute` |
-| `ftp-lab/`   | FTP Server     | 21   | Anonymous FTP enum for `ftp-user-enum`  |
-| `smb-lab/`   | Samba Share    | 445  | Test `smb-anon-hunter` and file access  |
+yaml
+Copy
+Edit
 
-### 🔧 Quickstart
+---
+
+## 🔱 Orchestration: `dharma.py`
+
+The `dharma.py` orchestrator guides you through each phase:
+
+python3 dharma.py --target http://10.10.10.42
+
+yaml
+Copy
+Edit
+
+You will be prompted to:
+
+1. 🔍 Run recon (e.g. find login forms)
+2. 🔐 Review loot and optionally brute-force creds
+3. 📜 Launch NSE scripts based on findings
+4. 💥 Trigger safe exploit modules
+
+All actions require human confirmation — no blind execution.
+
+---
+
+## 🔧 Components
+
+### [`http_recon.py`](utils/recon/http_recon.py)
+- Scans for login paths
+- Parses login fields
+- Saves loot for chaining into brute-force
+
+### [`http_brute.py`](utils/bruteforce/http_brute.py)
+- Supports `--level fast|full|breach`
+- Accepts custom user/password lists
+- Handles `form` or `json` login types
+
+### [`auto-nse.py`](utils/auto-nse.py)
+- Runs targeted Nmap scripts
+- Automatically loads correct NSEs for protocols (SMB, HTTP, FTP)
+
+### [`auto-exploit.py`](utils/auto-exploit.py)
+- Interactive or guided use of found CVEs or service-level exploits
+
+---
+
+## 🔐 Safe Handoff Philosophy
+
+Dharma will never:
+
+- Automatically exploit targets without consent
+- Deliver shells blindly
+- Skip user review of loot or prompts
+
+It enforces **red team rules of engagement** and supports **auditability**.
+
+---
+
+## 📦 Payloads
+
+Stored in [`payloads/`](payloads/) and include:
+
+- `linux/bash_reverse.sh`
+- `linux/payload_root.c`
+- `windows/powershell_reverse.ps1`
+- `windows/dns_exfil.ps1`
+- Obfuscated macros, shellcode launchers
+
+---
+
+## 📚 Wordlists
+
+Included in [`wordlists/`](wordlists/):
+
+- `usernames.txt`
+- `passwords.txt` (top 10k)
+- `passwords-big.txt` (RockYou-style)
+- `ftp-users.txt`
+
+💡 Compatible with `--userdb`, `--passdb` on brute modules.
+
+---
+
+## 🧪 NSE Scripts
+
+Stored in [`nse/`](nse/), including:
+
+- `http-json-brute.nse`
+- `ftp-user-enum.nse`
+- `smb-anon-hunter.nse`
+
+Use with:
 
 ```bash
-cd test-targets/flask-api && docker build -t flask-login-api .
-cd ../ftp-lab && docker build -t ftp-lab .
-cd ../smb-lab && docker build -t smb-lab .
+nmap -p 21 --script ./nse/ftp-user-enum.nse --script-args userdb=wordlists/ftp-users.txt
+📌 Status
+Module	Status
+http_recon.py	✅ Stable
+http_brute.py	✅ Stable
+dharma.py	✅ Safe Orchestration
+NSE scripts	✅ Curated & custom
+Auto NSE/Exploit	⚙️ Extensible
+Payloads	✅ Verified
+Shell catching	🔜 Manual
 
-docker run -d -p 5000:5000 flask-login-api
-docker run -d -p 21:21 ftp-lab
-docker run -d -p 445:445 smb-lab
-⚙️ Payloads & Uploads
-Dharma includes real-world test payloads for:
+🔭 Coming Soon
+🧪 verify_creds.py
 
-Web shells (payloads/web/)
+📊 loot_report.py HTML/Markdown generator
 
-Reverse shells (payloads/web/reverse_shell.php)
+☁️ Remote test lab bootstrapping (via Docker)
 
-Upload via utils/ftp_uploader.py
+👁️ Visual recon diff (compare scans over time)
 
-Example upload:
+📜 License
+MIT License. Use responsibly, for ethical purposes, and only where authorized.
 
-bash
-Copy
-Edit
-./utils/ftp_uploader.py 192.168.56.101 anonymous anonymous@example.com payloads/web/webshell.php
-📦 Wordlists
-Use these with NSE scripts or custom brute force:
-
-bash
-Copy
-Edit
-nmap -p21 <target> --script ./nse/ftp-user-enum.nse \
---script-args "userdb=utils/wordlists/usernames.txt"
 🧠 Author
-👤 Braxton Bailey
-🔗 GitHub: @Jimi421
+Braxton Bailey (@Jimi421)
+Built with 🔱 for red teamers, by a red teamer.
 
-🛡️ Disclaimer
-This toolkit is for educational and authorized testing only.
 
-Never use Dharma-Tools on targets you do not own or lack explicit permission to test.
-
-🔗 Contributions
-Pull requests are welcome. If you want to submit new NSE scripts, payloads, or lab targets:
-
-Use the structure and doc conventions shown in existing modules
-
-Include a test target or describe reproduction steps
-
-Keep scripts modular, with proper NSE metadata blocks
-
-🔮 Roadmap
- ldap-user-enum.nse
-
- http-token-leak-check.nse
-
- rpc-null-audit.nse
-
- NSE automation launcher (auto-nse.py)
-
- Payload delivery module (smb_autopusher.py, http_dropper.py)
-
- MkDocs documentation site (docs/)
-
-🧠 Weaponize knowledge.
-💣 Automate access.
-🔱 Build tools that last.
-
-—
-Dharma-Tools: Red Team Lab & Arsenal
