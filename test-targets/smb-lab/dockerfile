@@ -1,0 +1,10 @@
+FROM ubuntu:20.04
+
+RUN apt-get update && apt-get install -y samba
+
+COPY smb.conf /etc/samba/smb.conf
+COPY setup.sh /setup.sh
+RUN chmod +x /setup.sh && /setup.sh
+
+CMD ["smbd", "-F", "--no-process-group"]
+

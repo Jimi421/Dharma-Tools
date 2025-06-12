@@ -1,0 +1,4 @@
+FROM fauria/vsftpd
+COPY vsftpd.conf /etc/vsftpd/vsftpd.conf
+RUN mkdir -p /home/vsftpd && echo "top secret" > /home/vsftpd/flag.txt
+
