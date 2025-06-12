@@ -15,6 +15,12 @@
 - 🧰 Designed for extensibility and ethical automation
 
 ---
+## 🛠 Installation
+
+```bash
+pip install -r requirements.txt
+```
+
 
 ## 📁 Directory Structure
 
