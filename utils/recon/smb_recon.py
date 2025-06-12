@@ -103,7 +103,6 @@ def smb_recon(host, port=445):
             try:
                 smb.listPath(name, '*')
                 access = "READ"
-                # Try write test
                 dummy = "dharma_temp.txt"
                 fh = smb.createFile(name, f"\\{dummy}")
                 smb.closeFile(name, fh)
@@ -171,7 +170,7 @@ def smb_recon(host, port=445):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Full-spectrum SMB recon for Dharma-Tools")
-    parser.add_argument("target", help="Target IP or hostname")
+    parser.add_argument("--target", required=True, help="Target IP or hostname")
     parser.add_argument("--port", type=int, default=445, help="SMB port (default 445)")
     args = parser.parse_args()
 
