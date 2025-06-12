@@ -50,7 +50,7 @@ def cmd_recon(args):
     for target in targets:
         logger.info(f"Recon on {target} for: {services}")
         for svc in services:
-            script = f"recon/{svc}_recon.py"
+            script = os.path.join("utils", "recon", f"{svc}_recon.py")
             if not os.path.isfile(script):
                 logger.warning(f"No recon script for service: {svc}")
                 continue
@@ -60,13 +60,15 @@ def cmd_recon(args):
 
 def cmd_auto_nse(args):
     print(Fore.CYAN + "[+] Running NSE modules..." + Style.RESET_ALL)
-    run_command(["python3", "auto-nse.py", "--target", args.target])
+    script = os.path.join("utils", "auto-nse.py")
+    run_command(["python3", script, "--target", args.target])
     print(Fore.GREEN + "[+] NSE automation completed." + Style.RESET_ALL)
 
 
 def cmd_auto_exploit(args):
     print(Fore.CYAN + "[+] Launching automated exploits..." + Style.RESET_ALL)
-    run_command(["python3", "auto-exploit.py", "--target", args.target])
+    script = os.path.join("utils", "auto-exploit.py")
+    run_command(["python3", script, "--target", args.target])
     print(Fore.GREEN + "[+] Exploitation completed." + Style.RESET_ALL)
 
 
