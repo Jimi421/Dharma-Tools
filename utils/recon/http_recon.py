@@ -35,15 +35,15 @@ def looks_like_json_login(response):
             return True
     return False
 
-def save_loot(target, data):
-    os.makedirs("loot", exist_ok=True)
+def save_loot(target, data, loot_dir):
+    os.makedirs(loot_dir, exist_ok=True)
     slug = re.sub(r'[^a-zA-Z0-9]', '_', target)
-    filename = f"loot/http-{slug}.json"
+    filename = os.path.join(loot_dir, f"http-{slug}.json")
     with open(filename, "w") as f:
         json.dump(data, f, indent=2)
     print(f"\n[+] Loot saved to {filename}")
 
-def scan_http(target, quick=False):
+def scan_http(target, quick=False, loot_dir="loot"):
     print(f"\n[+] Starting HTTP Recon: {target}")
     try:
         r = requests.get(target, timeout=5, verify=False, headers=HEADERS)
@@ -117,14 +117,15 @@ def scan_http(target, quick=False):
             print(f"    [!] Error checking {url}: {e}")
             continue
 
-    save_loot(host, results)
+    save_loot(host, results, loot_dir)
 
 def cli():
     parser = argparse.ArgumentParser(description="HTTP recon tool for Dharma-Tools")
     parser.add_argument("target", help="Target base URL (e.g. http://10.10.10.42)")
     parser.add_argument("--quick", action="store_true", help="Limit to top 3 common paths")
+    parser.add_argument("--loot-dir", default="loot", help="Directory to store loot JSON")
     return parser.parse_args()
 
 if __name__ == "__main__":
     args = cli()
-    scan_http(args.target, quick=args.quick)
+    scan_http(args.target, quick=args.quick, loot_dir=args.loot_dir)

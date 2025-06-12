@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 import json, argparse, os, subprocess
 
+LOOT_DIR = "loot"
+
 def resolve_script(script_name):
     return f"./nse/{script_name}" if os.path.exists(f"./nse/{script_name}") else script_name
 
 def load_loot(ip, proto):
-    path = f"loot/{proto}-{ip.replace('.', '_')}.json"
+    path = os.path.join(LOOT_DIR, f"{proto}-{ip.replace('.', '_')}.json")
     if os.path.exists(path):
         with open(path) as f:
             return json.load(f)
@@ -41,7 +43,9 @@ def suggest_smb(smb_data, target):
         cmds.append(("smb", cmd))
     return cmds
 
-def auto_nse(target, modules=None, run=False, export_plan=None, dry_run_json=False, auto_chain=False, callback=None, loot_only=False):
+def auto_nse(target, modules=None, run=False, export_plan=None, dry_run_json=False, auto_chain=False, callback=None, loot_only=False, loot_dir="loot"):
+    global LOOT_DIR
+    LOOT_DIR = loot_dir
     print(f"\n[+] Auto-NSE v3 starting for {target}")
 
     allowed = modules if modules else ["ftp", "smb", "http"]
@@ -117,6 +121,7 @@ if __name__ == "__main__":
     parser.add_argument("--auto-chain", action="store_true", help="Run auto-exploit after NSE")
     parser.add_argument("--callback", help="Callback IP:PORT (for shell or RC)")
     parser.add_argument("--loot-only", action="store_true", help="Only parse loot, skip NSE")
+    parser.add_argument("--loot-dir", default="loot", help="Directory of loot JSON files")
 
     args = parser.parse_args()
     module_list = args.modules.split(",") if args.modules else None
@@ -129,6 +134,7 @@ if __name__ == "__main__":
         dry_run_json=args.dry_run_json,
         auto_chain=args.auto_chain,
         callback=args.callback,
-        loot_only=args.loot_only
+        loot_only=args.loot_only,
+        loot_dir=args.loot_dir
     )
 
