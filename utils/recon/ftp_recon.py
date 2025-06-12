@@ -178,9 +178,9 @@ if __name__ == "__main__":
     parser.add_argument("target", help="Target IP or hostname")
     parser.add_argument("--port", type=int, default=21, help="FTP port (default 21)")
     parser.add_argument("--user", default="anonymous", help="FTP username")
-    parser.add_argument("--pass", default="anonymous@ftp", help="FTP password")
+    parser.add_argument("--password", dest="password", default="anonymous@ftp", help="FTP password")
     parser.add_argument("--verify-upload", action="store_true", help="Try uploading a test file to writable dir")
     args = parser.parse_args()
 
-    ftp_recon(args.target, args.port, args.user, args.pass, args.verify_upload)
+    ftp_recon(args.target, args.port, args.user, args.password, args.verify_upload)
 
