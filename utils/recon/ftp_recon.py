@@ -3,11 +3,11 @@ import ftplib
 import argparse
 import os
 import json
-import re
-from datetime import datetime
+from datetime import datetime, timezone
 from io import BytesIO
 
-def banner(msg): print(f"\n[+] {msg}")
+def ftp_banner(msg):
+    print(f"\n[+] {msg}")
 
 def save_loot(host, data):
     os.makedirs("loot", exist_ok=True)
@@ -33,14 +33,10 @@ def try_login(host, port, user, passwd):
         return None, None
 
 def list_files(ftp):
-    loot = []
     try:
-        entries = ftp.nlst()
-        for entry in entries:
-            loot.append(entry)
+        return ftp.nlst()
     except:
-        pass
-    return loot
+        return []
 
 def find_writable_dirs(ftp):
     writable = []
@@ -67,8 +63,7 @@ def detect_shells(ftp, writable_dirs):
     for d in writable_dirs:
         try:
             ftp.cwd(d)
-            files = ftp.nlst()
-            for f in files:
+            for f in ftp.nlst():
                 if any(f.lower().endswith(ext) for ext in exts):
                     shells.append(f"{d}/{f}")
             ftp.cwd("..")
@@ -90,11 +85,13 @@ def test_upload(ftp, writable_dirs):
             continue
     return False
 
-def detect_vulnerabilities(banner):
+def detect_vulnerabilities(banner_text):
     vulns = []
-    if "vsFTPd 2.3.4" in banner:
+    if not banner_text:
+        return vulns
+    if "vsFTPd 2.3.4" in banner_text:
         vulns.append("vsFTPd 2.3.4 - CVE-2011-2523 (Backdoor)")
-    if "ProFTPD" in banner and "1.3.5" in banner:
+    if "ProFTPD" in banner_text and "1.3.5" in banner_text:
         vulns.append("ProFTPD 1.3.5 - CVE-2015-3306 (mod_copy)")
     return vulns
 
@@ -110,58 +107,58 @@ def ftp_recon(host, port, user, passwd, verify_upload):
         "upload_verified": False,
         "vulnerabilities": [],
         "banner": "",
-        "timestamp": datetime.utcnow().isoformat() + "Z"
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
-    ftp, banner = try_login(host, port, user, passwd)
+    ftp, banner_text = try_login(host, port, user, passwd)
     if not ftp and user != "anonymous":
-        # Fallback to anon
         print("[*] Falling back to anonymous login")
-        ftp, banner = try_login(host, port, "anonymous", "anonymous@ftp")
+        ftp, banner_text = try_login(host, port, "anonymous", "anonymous@ftp")
         result["anonymous_login"] = True
         result["user"] = "anonymous"
 
     if not ftp:
+        print("[-] FTP login ultimately failed. Exiting.")
         return
 
-    result["banner"] = banner
+    result["banner"] = banner_text
 
-    banner("Listing top-level files:")
+    ftp_banner("Listing top-level files:")
     files = list_files(ftp)
     for f in files:
         print(f"    - {f}")
     result["top_level_files"] = files
 
-    banner("Detecting writable directories:")
+    ftp_banner("Detecting writable directories:")
     writable = find_writable_dirs(ftp)
     for d in writable:
         print(f"    - Writable: {d}")
     result["writable_dirs"] = writable
 
-    banner("Searching for shell files:")
+    ftp_banner("Searching for shell files:")
     shells = detect_shells(ftp, writable)
     for s in shells:
         print(f"    - Shell detected: {s}")
     result["shell_files"] = shells
 
     if verify_upload and writable:
-        banner("Testing upload to writable dir:")
+        ftp_banner("Testing upload to writable dir:")
         result["upload_verified"] = test_upload(ftp, writable)
 
-    result["vulnerabilities"] = detect_vulnerabilities(banner)
+    result["vulnerabilities"] = detect_vulnerabilities(banner_text)
 
     ftp.quit()
     save_loot(host, result)
 
     # Summary
-    banner("Operator Summary:")
+    ftp_banner("Operator Summary:")
     print(f"    Login used: {result['user']}")
     print(f"    Writable dirs: {', '.join(writable) if writable else 'None'}")
     print(f"    Detected shells: {', '.join(shells) if shells else 'None'}")
     print(f"    Upload test: {'✔' if result['upload_verified'] else '✘'}")
 
     if result["vulnerabilities"]:
-        banner("Known Vulnerabilities:")
+        ftp_banner("Known Vulnerabilities:")
         for v in result["vulnerabilities"]:
             print(f"    - {v}")
 
@@ -183,4 +180,3 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     ftp_recon(args.target, args.port, args.user, args.password, args.verify_upload)
-
