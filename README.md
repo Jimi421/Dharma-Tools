@@ -19,23 +19,20 @@
 ## 📁 Directory Structure
 
 dharma-tools/
-├── dharma.py # 🔱 Orchestrator script
+├── dharma.py # 🔱 Orchestrator script (safe handoffs)
 ├── utils/
-│ ├── recon/ # Passive recon tools (e.g. http_recon.py)
-│ ├── bruteforce/ # Brute-force engines (e.g. http_brute.py)
-│ ├── auto-nse.py # NSE launcher with script routing
-│ └── auto-exploit.py # Exploit script launcher (safe handoff)
-├── nse/ # Custom NSE scripts
+│ ├── recon/ # Passive recon (http_recon.py)
+│ ├── bruteforce/ # Brute-force modules (http_brute.py)
+│ ├── auto-nse.py # NSE launcher with script args
+│ └── auto-exploit.py # Exploit launcher (manual approval)
+├── nse/ # Custom NSE scripts (SMB, HTTP, FTP)
 ├── wordlists/ # Usernames, passwords, combo lists
-├── payloads/ # Shells, droppers, reverse connect scripts
+├── payloads/ # Shells, droppers, macros (Linux/Win)
 ├── test-targets/ # Local Docker targets for testing
-├── loot/ # JSON output, saved loot, credentials
+├── loot/ # JSON loot from recon/brute modules
 ├── LICENSE
 └── README.md
 
-yaml
-Copy
-Edit
 
 ---
 
