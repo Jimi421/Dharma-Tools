@@ -94,6 +94,7 @@ def run_payload(args):
 
 
 def main():
+    global console
     parser = argparse.ArgumentParser(
         prog="dharma.py", description="Dharma-Tools Central CLI"
     )
