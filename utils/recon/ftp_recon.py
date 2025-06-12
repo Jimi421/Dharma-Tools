@@ -9,9 +9,9 @@ from io import BytesIO
 def ftp_banner(msg):
     print(f"\n[+] {msg}")
 
-def save_loot(host, data):
-    os.makedirs("loot", exist_ok=True)
-    filename = f"loot/ftp-{host.replace('.', '_')}.json"
+def save_loot(host, data, loot_dir):
+    os.makedirs(loot_dir, exist_ok=True)
+    filename = os.path.join(loot_dir, f"ftp-{host.replace('.', '_')}.json")
     with open(filename, "w") as f:
         json.dump(data, f, indent=2)
     print(f"\n[+] Loot saved: {filename}")
@@ -95,7 +95,7 @@ def detect_vulnerabilities(banner_text):
         vulns.append("ProFTPD 1.3.5 - CVE-2015-3306 (mod_copy)")
     return vulns
 
-def ftp_recon(host, port, user, passwd, verify_upload):
+def ftp_recon(host, port, user, passwd, verify_upload, loot_dir):
     result = {
         "target": host,
         "port": port,
@@ -148,7 +148,7 @@ def ftp_recon(host, port, user, passwd, verify_upload):
     result["vulnerabilities"] = detect_vulnerabilities(banner_text)
 
     ftp.quit()
-    save_loot(host, result)
+    save_loot(host, result, loot_dir)
 
     # Summary
     ftp_banner("Operator Summary:")
@@ -177,6 +177,7 @@ if __name__ == "__main__":
     parser.add_argument("--user", default="anonymous", help="FTP username")
     parser.add_argument("--password", dest="password", default="anonymous@ftp", help="FTP password")
     parser.add_argument("--verify-upload", action="store_true", help="Try uploading a test file to writable dir")
+    parser.add_argument("--loot-dir", default="loot", help="Directory to store loot JSON")
     args = parser.parse_args()
 
-    ftp_recon(args.target, args.port, args.user, args.password, args.verify_upload)
+    ftp_recon(args.target, args.port, args.user, args.password, args.verify_upload, args.loot_dir)

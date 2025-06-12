@@ -9,9 +9,9 @@ COMMON_PIPES = ['lsarpc', 'samr', 'svcctl', 'netlogon', 'spoolss', 'browser']
 def banner(text):
     print(f"\n[+] {text}")
 
-def save_loot(host, data):
-    os.makedirs("loot", exist_ok=True)
-    filename = f"loot/smb-{host.replace('.', '_')}.json"
+def save_loot(host, data, loot_dir):
+    os.makedirs(loot_dir, exist_ok=True)
+    filename = os.path.join(loot_dir, f"smb-{host.replace('.', '_')}.json")
     with open(filename, "w") as f:
         json.dump(data, f, indent=2)
     print(f"\n[+] Loot saved: {filename}")
@@ -65,7 +65,7 @@ def bruteforce_users_via_sid(host, sid_base, start=500, stop=550):
         print(f"[-] RID brute failed: {e}")
     return found_users
 
-def smb_recon(host, port=445):
+def smb_recon(host, port=445, loot_dir="loot"):
     loot = {
         "target": host,
         "port": port,
@@ -137,7 +137,7 @@ def smb_recon(host, port=445):
     else:
         print("    Could not retrieve SID.")
 
-    save_loot(host, loot)
+    save_loot(host, loot, loot_dir)
 
     # Operator summary
     banner("Operator Summary")
@@ -172,7 +172,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Full-spectrum SMB recon for Dharma-Tools")
     parser.add_argument("--target", required=True, help="Target IP or hostname")
     parser.add_argument("--port", type=int, default=445, help="SMB port (default 445)")
+    parser.add_argument("--loot-dir", default="loot", help="Directory to store loot JSON")
     args = parser.parse_args()
 
-    smb_recon(args.target, args.port)
+    smb_recon(args.target, args.port, loot_dir=args.loot_dir)
 
