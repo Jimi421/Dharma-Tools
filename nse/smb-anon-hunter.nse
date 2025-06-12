@@ -69,6 +69,7 @@ function walk(smbstate, share, path, depth, maxdepth, loot)
   end
 end
 
+
 action = function(host, port)
   local result = {}
   local loot = { found = {}, patterns = {} }
@@ -76,5 +77,55 @@ action = function(host, port)
   -- Grab script args
   local maxdepth = tonumber(stdnse.get_script_args("smb-anon-hunter.depth")) or 3
   local pattern_arg = stdnse.get_script_args("smb-anon-hunter.patterns")
-  local verbose = stdnse.get_sc_
+  local verbose = stdnse.get_script_args("smb-anon-hunter.verbose")
 
+  -- Populate loot patterns
+  if pattern_arg then
+    for pat in string.gmatch(pattern_arg, "[^,]+") do
+      table.insert(loot.patterns, pat)
+    end
+  else
+    loot.patterns = default_patterns
+  end
+
+  -- Connect anonymously
+  local smbstate, err = smb.Connection:new(host, port)
+  if not smbstate then
+    return "SMB connection failed: " .. (err or "unknown")
+  end
+  local status, err = smbstate:login("", "")
+  if not status then
+    return "Anonymous login failed: " .. (err or "")
+  end
+
+  -- Enumerate shares
+  local shares, err = smbstate:list_shares()
+  if not shares then
+    return "Failed to list shares: " .. (err or "unknown")
+  end
+
+  for _, share in ipairs(shares) do
+    local share_name = share.name or share
+    local ok = smbstate:tree_connect(share_name)
+    if ok then
+      local start = #loot.found
+      walk(smbstate, share_name, "", 1, maxdepth, loot)
+      if verbose or #loot.found > start then
+        table.insert(result, "Share: " .. share_name)
+      end
+      smbstate:tree_disconnect(share_name)
+    end
+  end
+
+  if #loot.found > 0 then
+    table.insert(result, "Loot:")
+    for _, f in ipairs(loot.found) do
+      table.insert(result, string.format("  %s:%s (size: %s bytes, mtime: %s)",
+        f.share, f.path, f.size, f.mtime))
+    end
+  elseif not verbose then
+    return nil
+  end
+
+  return stdnse.format_output(true, result)
+end
