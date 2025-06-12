@@ -2,3 +2,6 @@ requests
 impacket
 colorama
 pytest
+
+rich
+questionary
