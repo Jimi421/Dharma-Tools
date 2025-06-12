@@ -38,7 +38,7 @@ def run_recon(args):
         return
 
     with Progress(
-        SpinnerColumn(), TextColumn("{task.description}"), BarColumn(), TimeElapsedColumn(), tempfile=False
+        SpinnerColumn(), TextColumn("{task.description}"), BarColumn(), TimeElapsedColumn(), transient=True
     ) as progress:
         task = progress.add_task("Running recon...", total=len(services))
         for svc in services:
